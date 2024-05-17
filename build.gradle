@@ -1,0 +1,130 @@
+plugins {
+    id "java"
+    id "idea"
+    id "org.springframework.boot" version "${springBoot}"
+    id "io.spring.dependency-management" version "1.1.4"
+}
+
+ext {
+    def prefixStr = System.getenv("DOCKER_URL")
+    def usernameStr = System.getenv("DOCKER_USERNAME")
+    def passwordStr = System.getenv("DOCKER_PASSWORD")
+    def emailStr = System.getenv("DOCKER_USERNAME")
+    dockerUsername = Objects.isNull(usernameStr) ? "${dusername}" : usernameStr
+    dockerPassword = Objects.isNull(passwordStr) ? "${dpassword}" : passwordStr
+    dockerPrefix = Objects.isNull(prefixStr) ? "${dprefix}" : prefixStr
+    dockerEmail = Objects.isNull(emailStr) ? "${demail}" : emailStr
+}
+
+group "com.motcs.build"
+
+java {
+    sourceCompatibility = "21"
+    targetCompatibility = "21"
+}
+
+tasks.named("bootBuildImage") {
+    tags = ["${dockerPrefix}/motcs/${project.name}:latest"]
+    imageName = "${dockerPrefix}/motcs/${project.name}:${project.version}"
+    publish = true
+    pullPolicy = "IF_NOT_PRESENT"
+    bindings = [
+            "/mnt/build-image/jre:/platform/bindings/jre",
+            "/mnt/build-image/syft:/platform/bindings/syft",
+            "/mnt/build-image/boot:/platform/bindings/spring-boot"
+    ]
+    environment = [
+            "BPE_DELIM_JAVA_TOOL_OPTIONS" : " ",
+            "BPE_APPEND_JAVA_TOOL_OPTIONS": "-Dfile.encoding=UTF-8 -Dspring.profiles.active=prod"
+    ]
+    buildCache {
+        volume {
+            name = "cache.${project.name}.build"
+        }
+    }
+    launchCache {
+        volume {
+            name = "cache.${project.name}.launch"
+        }
+    }
+    docker {
+        publishRegistry {
+            username = "${dockerUsername}"
+            password = "${dockerPassword}"
+            email = "${dockerEmail}"
+        }
+    }
+}
+
+idea {
+    //if you want parts of paths in resulting files (*.iml, etc.) to be replaced by variables (Files)
+    pathVariables GRADLE_HOME: file('./gradle')
+    module {
+        iml {
+            beforeMerged { module ->
+                //if you want skip merging exclude dirs
+                module.excludeFolders.clear()
+            }
+        }
+        //if you prefer different output folders
+        inheritOutputDirs = false
+        outputDir = file('muchBetterOutputDir')
+        testOutputDir = file('muchBetterTestOutputDir')
+    }
+}
+
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor 0, "minutes"
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenLocal()
+    maven { url "https://maven.aliyun.com/repository/public" }
+    maven { url "https://maven.aliyun.com/repository/spring" }
+    maven { url "https://maven.aliyun.com/repository/google" }
+    mavenCentral()
+}
+
+dependencies {
+
+    implementation("org.springdoc:springdoc-openapi-starter-webflux-ui:${springdocVersion}")
+
+    implementation("org.springframework.cloud:spring-cloud-starter-loadbalancer")
+    implementation("com.github.ben-manes.caffeine:caffeine")
+
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    compileOnly("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
+
+    compileOnly("org.springframework.data:spring-data-commons")
+    compileOnly("org.springframework.boot:spring-boot-starter-data-r2dbc")
+    compileOnly("org.springframework.boot:spring-boot-starter-data-jpa")
+
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    annotationProcessor("org.projectlombok:lombok")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.projectreactor:reactor-test")
+
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "com.alibaba.cloud:spring-cloud-alibaba-dependencies:${springCloudAliVersion}"
+    }
+}
+
+tasks.named("test") {
+    useJUnitPlatform()
+}
