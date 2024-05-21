@@ -10,6 +10,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Component;
 
 /**
+ * 数据库操作包
+ *
  * @author <a href="https://github.com/motcs">motcs</a>
  * @since 2024-05-17 星期五
  */

@@ -128,25 +128,13 @@ public class DataTime {
         return now.toString();
     }
 
-    public static String getLocalDate(LocalDate now, int integer) {
-        if (integer == 0)
-            return now.format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
-        else if (integer == 1)
-            return now.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-        else if (integer == 2)
-            return now.atStartOfDay().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        else if (integer == 3)
-            return now.format(DateTimeFormatter.ofPattern("yyyy-MM"));
-        return now.toString();
-    }
-
     /**
      * 获取一个时间距今的毫秒数
      *
      * @param time 需要判断的时间
      * @return 时间相隔的毫秒数
      */
-    public static long LocalDateTimeToSecond(LocalDateTime time) {
+    public static long localDateTimeToSecond(LocalDateTime time) {
         Duration duration = Duration.between(LocalDateTime.now(), time);
         return duration.toSeconds();
     }
@@ -161,6 +149,13 @@ public class DataTime {
     public static boolean timeValid(LocalDateTime startTime, LocalDateTime endTime) {
         //获取当前时间
         LocalDateTime nowTime = LocalDateTime.now();
+        //返回判断结果
+        return !nowTime.isBefore(startTime) && nowTime.compareTo(endTime) < 1;
+    }
+
+    public static boolean timeValid(LocalDate startTime, LocalDate endTime) {
+        //获取当前时间
+        LocalDate nowTime = LocalDate.now();
         //返回判断结果
         return !nowTime.isBefore(startTime) && nowTime.compareTo(endTime) < 1;
     }
